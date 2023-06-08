@@ -1,6 +1,6 @@
 from tkinter import *
 import mysql.connector
-from database import *
+from database_connection import *
 
 #mydb, cursor = initialize_connection()
 
