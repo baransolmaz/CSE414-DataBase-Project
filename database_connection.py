@@ -13,7 +13,6 @@ def initialize_connection():
 
     return mydb, cursor
 
-
 def create_database(cursor):
     cursor.execute("SHOW DATABASES")
     temp = cursor.fetchall()
@@ -23,7 +22,6 @@ def create_database(cursor):
 
     cursor.execute("USE event_management")
     print("DATABASE CONNECTED")
-
 
 def create_table(cursor,conn):
     print("TABLE CONTROL")
@@ -83,7 +81,7 @@ def create_table(cursor,conn):
             attendee_id INT PRIMARY KEY AUTO_INCREMENT,
             attendee_name VARCHAR(50),
             age INT,
-            ticket_id INT NULL
+            ticket_quantity INT NULL
          )""")
         conn.commit()
         addAttendee(cursor, conn)
@@ -95,7 +93,8 @@ def create_table(cursor,conn):
             event_name VARCHAR(50) NULL,
             event_date DATE NULL,
             venue_id INT NULL,
-            venue_name VARCHAR(50) NULL
+            venue_name VARCHAR(50) NULL,
+            attendee_id INT NULL
          )""")
         conn.commit()
         addTicket(cursor, conn)
@@ -107,6 +106,7 @@ def create_table(cursor,conn):
             organizer_id INT NULL,
             venue_id INT NULL,
             ticket_quantity INT,
+            staff_quantity INT,
             speaker_id INT NULL,
             report_id INT NULL,
             date DATE 
@@ -131,12 +131,8 @@ def create_table(cursor,conn):
     alter_ticket_table_query = """
     ALTER TABLE Ticket
     ADD CONSTRAINT fk_ticket_event FOREIGN KEY (event_id) REFERENCES Event(event_id),
-    ADD CONSTRAINT fk_ticket_venue FOREIGN KEY (venue_id) REFERENCES Venue(venue_id)
-    """
-
-    alter_attendee_table_query = """
-    ALTER TABLE Attendee
-    ADD CONSTRAINT fk_attendee_ticket FOREIGN KEY (ticket_id) REFERENCES Ticket(ticket_id)
+    ADD CONSTRAINT fk_ticket_venue FOREIGN KEY (venue_id) REFERENCES Venue(venue_id),
+    ADD CONSTRAINT fk_ticket_attendee FOREIGN KEY (attendee_id) REFERENCES Attendee(attendee_id)
     """
 
     alter_staff_table_query = """
@@ -166,11 +162,6 @@ def create_table(cursor,conn):
     ticket_table_definition = cursor.fetchone()[1]
     if "fk_ticket_event" not in ticket_table_definition:
         cursor.execute(alter_ticket_table_query)
-
-    cursor.execute("SHOW CREATE TABLE Attendee")
-    attendee_table_definition = cursor.fetchone()[1]
-    if "fk_attendee_ticket" not in attendee_table_definition:
-        cursor.execute(alter_attendee_table_query)
 
     cursor.execute("SHOW CREATE TABLE Staff")
     staff_table_definition = cursor.fetchone()[1]
@@ -248,23 +239,23 @@ def addOrganizer(cursor, conn):
     conn.commit()
     
 def addAttendee(cursor, conn):
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 1", 18, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 1", 22, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 2", 17, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 3", 16, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 4", 21, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 5", 28, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 6", 34, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 7", 31, None))
-    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_id) values(%s,%s,%s)",
+    cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
                    ("Attendee 8", 32, None))
 
     conn.commit()
@@ -284,29 +275,29 @@ def addStaff(cursor, conn):
     conn.commit()
 
 def addEvent(cursor, conn):
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 1",None,None,150, None,None,"2023-06-26"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 2",None,None,100, None,None,"2023-07-22"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 3",None,None,60, None,None,"2023-06-15"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 4",None,None,300, None,None,"2023-08-26"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 5",None,None,20, None,None,"2023-10-21"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 6",None,None,50, None,None,"2023-07-12"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 7",None,None,40, None,None,"2023-06-5"))
-    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 8",None,None,30, None,None,"2023-11-09"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 1",None,None,150,15, None,None,"2023-06-26"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 2",None,None,100,20, None,None,"2023-07-22"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 3",None,None,60,10, None,None,"2023-06-15"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 4",None,None,300,50, None,None,"2023-08-26"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 5",None,None,20,5, None,None,"2023-10-21"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 6",None,None,50,10, None,None,"2023-07-12"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 7",None,None,40,15, None,None,"2023-06-5"))
+    cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
+                   ("Event 8",None,None,30,12, None,None,"2023-11-09"))
 
     conn.commit()
     
 def addTicket(cursor, conn):
-    for i in range(100):
-        cursor.execute("INSERT INTO Ticket(event_id,event_name,event_date,venue_id,venue_name) values(%s, %s,%s, %s, %s)",
-                   (None, None, None, None, None))
+    for i in range(5):
+        cursor.execute("INSERT INTO Ticket(event_id,event_name,event_date,venue_id,venue_name,attendee_id) values(%s,%s, %s,%s, %s, %s)",
+                   (None, None, None, None, None,None))
     conn.commit()
 
 def dropAllDB():
@@ -353,6 +344,29 @@ def addTrigger2(cursor, conn):
     conn.commit()
 
 def addTrigger3(cursor, conn):
+    cursor.execute("""CREATE TRIGGER check_month_until_event_delete_trigger
+                BEFORE DELETE ON Event
+                FOR EACH ROW
+                BEGIN
+                    IF OLD.date <= DATE_ADD(CURDATE(), INTERVAL 1 MONTH) THEN
+                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Event must be at least one month away';
+                    END IF;
+                END;""")
+    conn.commit()
+
+def addTrigger4(cursor, conn):
+    cursor.execute("""CREATE TRIGGER check_month_until_event_delete_trigger
+                BEFORE DELETE ON Event
+                FOR EACH ROW
+                BEGIN
+                    IF OLD.date <= DATE_ADD(CURDATE(), INTERVAL 1 MONTH) THEN
+                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Event must be at least one month away';
+                    END IF;
+                END;""")
+    conn.commit()
+
+
+def addTrigger5(cursor, conn):
     cursor.execute("""CREATE TRIGGER check_month_until_event_delete_trigger
                 BEFORE DELETE ON Event
                 FOR EACH ROW
