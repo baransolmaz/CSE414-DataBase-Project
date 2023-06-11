@@ -26,7 +26,6 @@ class Main_App:
         staff_button = Button(
             self.window, text="Staff/Volunteer Login", width=46, height=3, command=Staff_App)
         staff_button.place(x=2, y=215)
-
 class Staff_App:
     def __init__(self):
         self.window = Tk()
@@ -57,7 +56,7 @@ class Staff_App:
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM Event")
+        cursor.execute("SELECT * FROM StaffView")
 
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
@@ -99,7 +98,6 @@ class Staff_App:
         env=StaffDialog(1)
     def beVolunteer(self):
         env=StaffDialog(3)
-        
 class Speaker_App:
     def __init__(self):
         self.window = Tk()
@@ -127,7 +125,7 @@ class Speaker_App:
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM Event")
+        cursor.execute("SELECT * FROM SpeakerView")
 
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
@@ -146,7 +144,6 @@ class Speaker_App:
         ent=CancelEventDialog(1)
     def changeTopic(self):
         ent = CancelEventDialog(2)
-
     def addSpeaker(self):
         ent = CancelEventDialog(3)
     def listSpeakers(self):
@@ -166,7 +163,6 @@ class Speaker_App:
                 self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-            
 class Organizer_App:
     def __init__(self):
         self.window = Tk()
@@ -198,7 +194,6 @@ class Organizer_App:
     
     def cancelEvent(self):
        eny = CancelEventDialog(0)
-
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
@@ -217,7 +212,6 @@ class Organizer_App:
                 self.entries[i*len(event)+j].place(x=(90*j),y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-
     def listVenues(self):
         global cursor
         clearEntries(self.entries)
@@ -235,7 +229,6 @@ class Organizer_App:
                 self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-
     def listSpeakers(self):
         global cursor
         clearEntries(self.entries)
@@ -253,13 +246,10 @@ class Organizer_App:
                 self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-
     def editEvent(self):
         ent=EventDialog(1)
-    
     def createEvent(self):
         evnt=EventDialog(0)
-
 class Attendee_App:
     def __init__(self):
         self.window = Tk()
@@ -305,7 +295,6 @@ class Attendee_App:
                 self.entries[i*len(event)+j].place(x=(90*j),y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-
     def listAttendees(self):
         global cursor
         clearEntries(self.entries)
@@ -323,7 +312,6 @@ class Attendee_App:
                 self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-
     def listAllTicket(self):
         global cursor
         clearEntries(self.entries)
@@ -343,10 +331,8 @@ class Attendee_App:
             i = i+1
     def addAttendee(self):
         evnt=AttendeeDialog(0)  
-
     def buyTicket(self):
         evnt = AttendeeDialog(2)
-
     def cancelTicket(self):
         evnt = AttendeeDialog(3)
 class EventDialog:
@@ -431,7 +417,6 @@ class EventDialog:
         mydb.commit()
 
         self.root.destroy()
-
     def update_event(self):
         event_id = self.event_id_entry.get()
         event_name = self.event_name_entry.get()
@@ -509,23 +494,23 @@ class CancelEventDialog:
 
         mydb.commit()
         self.root.destroy()
-
     def attend_event(self):
         event_id = self.event_name_entry.get()
         speaker_id = self.speaker_id_entry.get()
 
         global cursor, mydb
         try:
+            mydb.start_transaction()
             cursor.execute("UPDATE Event SET speaker_id= %s WHERE event_id= %s",
                            (speaker_id, event_id))
             cursor.execute("UPDATE Speaker SET event_id = %s WHERE speaker_id = %s",
                            (event_id,speaker_id))
+            mydb.commit()
         except mysql.connector.Error as err:
             show_warning(err.msg)
+            mydb.rollback()
 
-        mydb.commit()
         self.root.destroy()
-
     def change_topic(self):
         topic = self.topic_entry.get()
         speaker_id = self.speaker_id_entry.get()
@@ -539,7 +524,6 @@ class CancelEventDialog:
 
         mydb.commit()
         self.root.destroy()
-
     def add_speaker(self):
         topic = self.topic_entry.get()
         name = self.name_entry.get()
@@ -553,7 +537,6 @@ class CancelEventDialog:
 
         mydb.commit()
         self.root.destroy()
-        
 class AttendeeDialog:
     def __init__(self, type):
         self.root = Tk()
@@ -614,7 +597,6 @@ class AttendeeDialog:
 
         mydb.commit()
         self.root.destroy()
-
     def update_attendee(self):
         attendee_id = self.attendee_id_entry.get()
         attendee_name = self.attendee_name_entry.get()
@@ -629,13 +611,13 @@ class AttendeeDialog:
 
         mydb.commit()
         self.root.destroy()
-
     def buy_ticket(self):
         attendee_id = self.attendee_id_entry.get()
         event_id = self.event_id_entry.get()
 
         global cursor, mydb
         try:
+            mydb.start_transaction()
             cursor.execute("SELECT event_name, date, venue_id FROM Event WHERE event_id= %s",(event_id,))
             event_details = cursor.fetchone()
             if event_details is not None:
@@ -647,26 +629,31 @@ class AttendeeDialog:
                             (event_id,event_name,event_date,venue_id,venue_name[0],attendee_id))
                 cursor.execute("UPDATE Event SET ticket_quantity = ticket_quantity -1 WHERE event_id=%s",
                                (event_id,))
+            mydb.commit()
         except mysql.connector.Error as err:
             show_warning(err.msg)
+            mydb.rollback()
 
-        mydb.commit()
         self.root.destroy()
-        
     def cancel_ticket(self):
         attendee_id = self.attendee_id_entry.get()
         ticket_id = self.ticket_id_entry.get()
 
         global cursor, mydb
         try:
+            mydb.start_transaction()
+            cursor.execute("SELECT event_id FROM Ticket WHERE ticket_id= %s", (ticket_id,))
+            event_id = cursor.fetchone()
+            cursor.execute("UPDATE EVENT SET ticket_quantity= ticket_quantity+1 WHERE event_id= %s",
+                           (event_id[0],))
             cursor.execute("DELETE FROM Ticket WHERE ticket_id= %s AND attendee_id=%s ",
                            (ticket_id,attendee_id))
+            mydb.commit()   
         except mysql.connector.Error as err:
             show_warning(err.msg)
-
-        mydb.commit()
+            mydb.rollback()
+            
         self.root.destroy()
- 
 class StaffDialog:
     def __init__(self, type):
         self.root = Tk()
@@ -721,7 +708,6 @@ class StaffDialog:
 
         mydb.commit()
         self.root.destroy()
-
     def update_staff(self):
         staff_id = self.staff_id_entry.get()
         staff_name = self.staff_name_entry.get()
@@ -736,21 +722,21 @@ class StaffDialog:
 
         mydb.commit()
         self.root.destroy()
-
     def be_volunteer(self):
+        global cursor, mydb
         staff_id = self.staff_id_entry.get()
         event_id = self.event_id_entry.get()
 
-        global cursor, mydb
         try:
+            mydb.start_transaction()
             cursor.execute("UPDATE Staff SET event_id=%s WHERE staff_id= %s", (event_id,staff_id,))
             cursor.execute("UPDATE Event SET staff_quantity=staff_quantity-1 WHERE event_id= %s", (event_id,))
+            mydb.commit()
         except mysql.connector.Error as err:
             show_warning(err.msg)
+            mydb.rollback()
 
-        mydb.commit()
         self.root.destroy()
-
     def remove_staff(self):
         staff_id = self.staff_id_entry.get()
         global cursor, mydb
