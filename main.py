@@ -36,16 +36,70 @@ class Staff_App:
         self.window.title("Staff-Volunteer")  # Pencere ismi
         self.entries=[]
         list_event_button = Button(self.window, text="List Events",
-                                   width=15, height=3)  # , command=Staff_App)
+                                   width=12, height=3 , command=self.listEvents)
         list_event_button.place(x=2, y=5)
-        view_event_details_button = Button(self.window, text="View Event Details",
-                                           width=15, height=3)  # , command=Staff_App)
-        view_event_details_button.place(x=152, y=5)
-        volunteer_button = Button(self.window, text="Be Volunteer",
-                                  width=15, height=3)  # , command=Staff_App)
-        volunteer_button.place(x=302, y=5)
+        view_event_details_button = Button(self.window, text="Be Volunteer",
+                                           width=12, height=3, command=self.beVolunteer)
+        view_event_details_button.place(x=122, y=5)
+        list_volunteer_button = Button(self.window, text="List Staff",
+                                  width=12, height=3, command=self.listStaff)
+        list_volunteer_button.place(x=242, y=5)
+        volunteer_button = Button(self.window, text="Add Staff",
+                                  width=12, height=3, command=self.addStaff)
+        volunteer_button.place(x=362, y=5)
+        edit_volunteer_button = Button(self.window, text="Edit Staff",
+                                  width=12, height=3, command=self.editStaff)
+        edit_volunteer_button.place(x=482, y=5)
+        remove_volunteer_button = Button(self.window, text="Remove Staff",
+                                  width=12, height=3, command=self.removeStaff)
+        remove_volunteer_button.place(x=602, y=5)
 
+    def listEvents(self):
+        global cursor
+        clearEntries(self.entries)
+        cursor.execute("SELECT * FROM Event")
 
+        column_names = [desc[0] for desc in cursor.description]
+        # Print the column names
+        for j, column_name in enumerate(column_names):
+            self.entries.append(Entry(self.window, width=10, fg='black'))
+            self.entries[j].place(x=(90*(j)), y=80)
+            self.entries[j].insert(END, column_name)
+        i = 1
+        for event in cursor:
+            for j in range(len(event)):
+                self.entries.append(Entry(self.window, width=10, fg='black'))
+                self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
+                self.entries[i*len(event)+j].insert(END, str(event[j]))
+            i = i+1
+
+    def listStaff(self):
+        global cursor
+        clearEntries(self.entries)
+        cursor.execute("SELECT * FROM Staff")
+
+        column_names = [desc[0] for desc in cursor.description]
+        # Print the column names
+        for j, column_name in enumerate(column_names):
+            self.entries.append(Entry(self.window, width=10, fg='black'))
+            self.entries[j].place(x=(90*(j)), y=80)
+            self.entries[j].insert(END, column_name)
+        i = 1
+        for event in cursor:
+            for j in range(len(event)):
+                self.entries.append(Entry(self.window, width=10, fg='black'))
+                self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
+                self.entries[i*len(event)+j].insert(END, str(event[j]))
+            i = i+1
+    def removeStaff(self):
+        env=StaffDialog(2)
+    def addStaff(self):
+        env=StaffDialog(0)
+    def editStaff(self):
+        env=StaffDialog(1)
+    def beVolunteer(self):
+        env=StaffDialog(3)
+        
 class Speaker_App:
     def __init__(self):
         self.window = Tk()
@@ -112,7 +166,6 @@ class Speaker_App:
                 self.entries[i*len(event)+j].place(x=(90*j), y=(25*i)+80)
                 self.entries[i*len(event)+j].insert(END, str(event[j]))
             i = i+1
-            
             
 class Organizer_App:
     def __init__(self):
@@ -237,7 +290,7 @@ class Attendee_App:
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM Event")
+        cursor.execute("SELECT * FROM AttendeeView")
         
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
@@ -592,6 +645,8 @@ class AttendeeDialog:
                 cursor.execute("""INSERT INTO Ticket(event_id,event_name,event_date,
                                     venue_id,venue_name,attendee_id) values(%s,%s,%s,%s,%s,%s)""",
                             (event_id,event_name,event_date,venue_id,venue_name[0],attendee_id))
+                cursor.execute("UPDATE Event SET ticket_quantity = ticket_quantity -1 WHERE event_id=%s",
+                               (event_id,))
         except mysql.connector.Error as err:
             show_warning(err.msg)
 
@@ -611,7 +666,101 @@ class AttendeeDialog:
 
         mydb.commit()
         self.root.destroy()
-        
+ 
+class StaffDialog:
+    def __init__(self, type):
+        self.root = Tk()
+        title = "Add Staff"
+        cmd = self.create_staff
+        if type == 1:
+            title = "Edit Staff"
+            cmd = self.update_staff
+        elif type == 2:
+            title = "Remove Staff"
+            cmd = self.remove_staff
+        elif type == 3:
+            title = "Volunteer"
+            cmd = self.be_volunteer
+
+        self.root.title(title)
+
+        if type == 1 or type == 2 or type == 3:
+            staff_id_label = Label(self.root, text="Staff ID:")
+            staff_id_label.pack()
+            self.staff_id_entry = Entry(self.root)
+            self.staff_id_entry.pack()
+        if type == 0 or type == 1:
+            staff_name_label = Label(self.root, text="Staff Name:")
+            staff_name_label.pack()
+            self.staff_name_entry = Entry(self.root)
+            self.staff_name_entry.pack()
+
+            age_label = Label(self.root, text="Age:")
+            age_label.pack()
+            self.age_entry = Entry(self.root)
+            self.age_entry.pack()
+        if type == 3:
+            event_id_label = Label(self.root, text="Event ID:")
+            event_id_label.pack()
+            self.event_id_entry = Entry(self.root)
+            self.event_id_entry.pack()
+
+        create_attendee_button = Button(
+            self.root, text=title, command=cmd)
+        create_attendee_button.pack()
+
+    def create_staff(self):
+        staff_name = self.staff_name_entry.get()
+        age = self.age_entry.get()
+
+        global cursor, mydb
+        try:
+            cursor.execute("INSERT INTO Staff(staff_name,age)values(%s,%s)",(staff_name, age))
+        except mysql.connector.Error as err:
+            show_warning(err.msg)
+
+        mydb.commit()
+        self.root.destroy()
+
+    def update_staff(self):
+        staff_id = self.staff_id_entry.get()
+        staff_name = self.staff_name_entry.get()
+        age = self.age_entry.get()
+
+        global cursor, mydb
+        try:
+            cursor.execute("UPDATE Staff SET staff_name = %s,age=%s WHERE staff_id = %s",
+                           (staff_name, age, staff_id))
+        except mysql.connector.Error as err:
+            show_warning(err.msg)
+
+        mydb.commit()
+        self.root.destroy()
+
+    def be_volunteer(self):
+        staff_id = self.staff_id_entry.get()
+        event_id = self.event_id_entry.get()
+
+        global cursor, mydb
+        try:
+            cursor.execute("UPDATE Staff SET event_id=%s WHERE staff_id= %s", (event_id,staff_id,))
+            cursor.execute("UPDATE Event SET staff_quantity=staff_quantity-1 WHERE event_id= %s", (event_id,))
+        except mysql.connector.Error as err:
+            show_warning(err.msg)
+
+        mydb.commit()
+        self.root.destroy()
+
+    def remove_staff(self):
+        staff_id = self.staff_id_entry.get()
+        global cursor, mydb
+        try:
+            cursor.execute("DELETE FROM Staff WHERE staff_id= %s",(staff_id,))
+        except mysql.connector.Error as err:
+            show_warning(err.msg)
+
+        mydb.commit()
+        self.root.destroy()
 def clearEntries(entries):
     k=len(entries)
     for i in range(k):

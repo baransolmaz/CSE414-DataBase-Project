@@ -152,6 +152,7 @@ def create_table(cursor,conn):
         addTrigger1(cursor,conn)
         addTrigger2(cursor, conn)
         addTrigger3(cursor, conn)
+        addTrigger4(cursor, conn)
 
     cursor.execute("SHOW CREATE TABLE Organizer")
     organizer_table_definition = cursor.fetchone()[1]
@@ -167,6 +168,7 @@ def create_table(cursor,conn):
     staff_table_definition = cursor.fetchone()[1]
     if "fk_staff_event" not in staff_table_definition:
         cursor.execute(alter_staff_table_query)
+        addTrigger5(cursor, conn)
     
     cursor.execute("SHOW CREATE TABLE Speaker")
     speaker_table_definition = cursor.fetchone()[1]
@@ -174,6 +176,15 @@ def create_table(cursor,conn):
         cursor.execute(alter_speaker_table_query)
     
     print("FOREIGN KEYS ADDED")
+    
+    #cursor.execute("SHOW CREATE TABLE AttendeeView")
+    if "AttendeeView" not in tables:
+        createView1(cursor,conn)
+    
+    if "StaffView" not in tables:
+        createView1(cursor, conn)
+    
+    print("VIEWS ADDED")
 
 def addVenue(cursor, conn):
 
@@ -276,21 +287,21 @@ def addStaff(cursor, conn):
 
 def addEvent(cursor, conn):
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 1",None,None,150,15, None,None,"2023-06-26"))
+                   ("Event 1",1,1,150,15, None,None,"2023-06-26"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 2",None,None,100,20, None,None,"2023-07-22"))
+                   ("Event 2",1,1,100,20, None,None,"2023-07-22"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 3",None,None,60,10, None,None,"2023-06-15"))
+                   ("Event 3",1,2,60,10, None,None,"2023-06-15"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 4",None,None,300,50, None,None,"2023-08-26"))
+                   ("Event 4",2,None,300,50, None,None,"2023-08-26"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 5",None,None,20,5, None,None,"2023-10-21"))
+                   ("Event 5",2,1,20,5, None,None,"2023-10-21"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 6",None,None,50,10, None,None,"2023-07-12"))
+                   ("Event 6",3,2,50,10, None,None,"2023-07-12"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 7",None,None,40,15, None,None,"2023-06-5"))
+                   ("Event 7",4,2,40,15, None,None,"2023-06-5"))
     cursor.execute("INSERT INTO Event(event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)",
-                   ("Event 8",None,None,30,12, None,None,"2023-11-09"))
+                   ("Event 8",3,1,30,12, None,None,"2023-11-09"))
 
     conn.commit()
     
@@ -355,24 +366,36 @@ def addTrigger3(cursor, conn):
     conn.commit()
 
 def addTrigger4(cursor, conn):
-    cursor.execute("""CREATE TRIGGER check_month_until_event_delete_trigger
-                BEFORE DELETE ON Event
+    cursor.execute("""CREATE TRIGGER check_ticket_quantity_trigger
+                BEFORE UPDATE ON Event
                 FOR EACH ROW
                 BEGIN
-                    IF OLD.date <= DATE_ADD(CURDATE(), INTERVAL 1 MONTH) THEN
-                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Event must be at least one month away';
+                    IF NEW.ticket_quantity < 0 THEN
+                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'No Ticket';
+                    END IF;
+                END;""")
+    conn.commit()
+
+def addTrigger5(cursor, conn):
+    cursor.execute("""CREATE TRIGGER check_staff_age_trigger
+                BEFORE UPDATE ON Staff
+                FOR EACH ROW
+                BEGIN
+                    IF OLD.age < 22 THEN
+                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Staff age must be at least 22.';
                     END IF;
                 END;""")
     conn.commit()
 
 
-def addTrigger5(cursor, conn):
-    cursor.execute("""CREATE TRIGGER check_month_until_event_delete_trigger
-                BEFORE DELETE ON Event
-                FOR EACH ROW
-                BEGIN
-                    IF OLD.date <= DATE_ADD(CURDATE(), INTERVAL 1 MONTH) THEN
-                        SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'Event must be at least one month away';
-                    END IF;
-                END;""")
+def createView1(cursor, conn):
+    cursor.execute("""CREATE VIEW AttendeeView AS
+                SELECT event_name,organizer_id,venue_id,ticket_quantity,speaker_id,date
+                FROM Event;""")
+    conn.commit()
+    
+def createView2(cursor, conn):
+    cursor.execute("""CREATE VIEW StaffView AS
+                SELECT event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,date
+                FROM Event;""")
     conn.commit()
