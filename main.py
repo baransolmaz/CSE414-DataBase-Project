@@ -249,7 +249,7 @@ class Organizer_App:
     def listSpeakers(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM Speaker")
+        cursor.execute("SELECT * FROM SpeakerInfo")
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
         for j, column_name in enumerate(column_names):
@@ -335,7 +335,7 @@ class Attendee_App:
     def listAllTicket(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM Ticket")
+        cursor.execute("SELECT * FROM TicketView")
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
         for j, column_name in enumerate(column_names):

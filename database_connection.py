@@ -189,6 +189,12 @@ def create_table(cursor,conn):
     
     if "SpeakerView" not in tables:
         createView3(cursor, conn)
+        
+    if"SpeakerInfo" not in tables:
+        createView4(cursor, conn)
+        
+    if "TicketView" not in tables:
+        createView5(cursor, conn)
     print("VIEWS ADDED")
     print("PROCEDURES ADDED")
 
@@ -205,17 +211,17 @@ def addVenue(cursor, conn):
 
 def addSpeaker(cursor, conn):
     cursor.execute("INSERT INTO Speaker(speaker_name,event_id,topic) values(%s,%s,%s)",
-                   ("Ahmet",None, "History"))
+                   ("Ahmet",2, "History"))
     cursor.execute("INSERT INTO Speaker(speaker_name,event_id,topic) values(%s,%s,%s)",
-                   ("Mehmet",None,"Math"))
+                   ("Mehmet",1,"Math"))
     cursor.execute("INSERT INTO Speaker(speaker_name,event_id,topic) values(%s,%s,%s)",
-                   ("Ayşe", None, "Science"))
+                   ("Ayşe", 5, "Science"))
     cursor.execute("INSERT INTO Speaker(speaker_name,event_id,topic) values(%s,%s,%s)",
-                   ("Ali", None, "Human Rights"))
+                   ("Ali", 6, "Human Rights"))
     cursor.execute("INSERT INTO Speaker(speaker_name,event_id,topic) values(%s,%s,%s)",
-                   ("Yakup", None, "Justice"))
+                   ("Yakup", 7, "Justice"))
     cursor.execute("INSERT INTO Speaker(speaker_name,event_id,topic) values(%s,%s,%s)",
-                   ("Talha", None, "Economy"))
+                   ("Talha", 8, "Economy"))
    
     conn.commit()
     
@@ -294,7 +300,7 @@ def addEvent(cursor, conn):
 def addTicket(cursor, conn):
     for i in range(5):
         cursor.execute("INSERT INTO Ticket(event_id,event_name,event_date,venue_id,venue_name,attendee_id) values(%s,%s, %s,%s, %s, %s)",
-                   (None, None, None, None, None,None))
+                       (2, "Event 2", "2023-07-22",2, "Room 2",1))
     conn.commit()
 
 def dropAllDB():
@@ -401,6 +407,20 @@ def createView3(cursor, conn):
                 SELECT event_id,event_name,organizer_id,venue_id,speaker_id,date
                 FROM Event 
                 WHERE speaker_id IS NULL;""")
+    conn.commit()
+
+def createView4(cursor, conn):
+    cursor.execute("""CREATE VIEW SpeakerInfo AS
+            SELECT Speaker.*,Event.event_name,Event.date
+            FROM Speaker,Event
+            WHERE Speaker.event_id = Event.event_id;""")
+    conn.commit()
+
+def createView5(cursor, conn):
+    cursor.execute("""CREATE VIEW TicketView AS
+            SELECT Ticket.*,Speaker.speaker_name,Speaker.topic
+            FROM Ticket,Speaker
+            WHERE Speaker.event_id = Ticket.event_id;""")
     conn.commit()
 
 def createProcedure1(cursor,conn):
