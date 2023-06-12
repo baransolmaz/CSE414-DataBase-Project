@@ -126,7 +126,9 @@ class Speaker_App:
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM SpeakerView")
+        cursor.execute("""SELECT SpeakerView.*, Venue.venue_name, Venue.address
+                  FROM SpeakerView
+                  LEFT JOIN Venue ON SpeakerView.venue_id = Venue.venue_id""")
 
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
@@ -167,7 +169,7 @@ class Speaker_App:
 class Organizer_App:
     def __init__(self):
         self.window = Tk()
-        self.window.geometry("1000x600")  # Screen Size(yatay x dikey)
+        self.window.geometry("1200x600")  # Screen Size(yatay x dikey)
         self.window.resizable(0, 0)
         self.window.columnconfigure(0, weight=1)
         self.window.config(background="#9BABB8")
@@ -209,7 +211,10 @@ class Organizer_App:
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM Event")
+        cursor.execute("""SELECT * FROM Event LEFT JOIN Venue ON Event.venue_id = Venue.venue_id
+                  UNION
+                  SELECT * FROM Event RIGHT JOIN Venue ON Event.venue_id = Venue.venue_id
+                  WHERE Event.event_id IS NOT NULL""")
         
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
@@ -292,7 +297,10 @@ class Attendee_App:
     def listEvents(self):
         global cursor
         clearEntries(self.entries)
-        cursor.execute("SELECT * FROM AttendeeView")
+        cursor.execute("""SELECT AttendeeView.*,Speaker.speaker_name, Speaker.topic
+                  FROM AttendeeView
+                  RIGHT JOIN Speaker ON AttendeeView.speaker_id = Speaker.speaker_id
+                  WHERE AttendeeView.event_id IS NOT NULL""")
         
         column_names = [desc[0] for desc in cursor.description]
         # Print the column names
