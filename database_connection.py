@@ -45,6 +45,7 @@ def create_table(cursor,conn):
             details VARCHAR(200)
          )""")
         conn.commit()
+        createProcedure1(cursor, conn)
         addReport(cursor,conn)
         
     if "Venue" not in tables:
@@ -55,6 +56,7 @@ def create_table(cursor,conn):
             capacity INT
          )""")
         conn.commit()
+        createProcedure2(cursor, conn)
         addVenue(cursor, conn)
         
     if "Organizer" not in tables:
@@ -64,6 +66,7 @@ def create_table(cursor,conn):
             event_id INT NULL
          )""")
         conn.commit()
+        createProcedure3(cursor, conn)
         addOrganizer(cursor,conn)
         
     if "Staff" not in tables:
@@ -158,7 +161,7 @@ def create_table(cursor,conn):
     organizer_table_definition = cursor.fetchone()[1]
     if "fk_organizer_event" not in organizer_table_definition:
         cursor.execute(alter_organizer_table_query)
-
+        
     cursor.execute("SHOW CREATE TABLE Ticket")
     ticket_table_definition = cursor.fetchone()[1]
     if "fk_ticket_event" not in ticket_table_definition:
@@ -177,7 +180,6 @@ def create_table(cursor,conn):
     
     print("FOREIGN KEYS ADDED")
     
-    #cursor.execute("SHOW CREATE TABLE AttendeeView")
     if "AttendeeView" not in tables:
         createView1(cursor,conn)
     
@@ -186,27 +188,18 @@ def create_table(cursor,conn):
     
     if "SpeakerView" not in tables:
         createView3(cursor, conn)
-    
     print("VIEWS ADDED")
+    print("PROCEDURES ADDED")
 
 def addVenue(cursor, conn):
-
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Room 1","Block A, Floor 1",300))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Room 2", "Block A, Floor 2", 150))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Room 3", "Block A, Floor 3", 100))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Kartal", "Istanbul,Kartal", 200))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Pendik", "Istanbul,Pendik", 150))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Kartal 2", "Istanbul,Kartal", 20))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Room 7", "Block B, Floor 1", 60))
-    cursor.execute("INSERT INTO Venue(venue_name,address,capacity) values(%s,%s,%s)",
-                   ("Room 8", "Block B, Floor 2", 90))
+    cursor.callproc("AddVenue",["Room 1","Block A, Floor 1",300])
+    cursor.callproc("AddVenue",["Room 2", "Block A, Floor 2", 150])
+    cursor.callproc("AddVenue",["Room 3", "Block A, Floor 3", 100])
+    cursor.callproc("AddVenue",["Kartal", "Istanbul,Kartal", 200])
+    cursor.callproc("AddVenue",["Pendik", "Istanbul,Pendik", 150])
+    cursor.callproc("AddVenue",["Kartal 2", "Istanbul,Kartal", 20])
+    cursor.callproc("AddVenue",["Room 7", "Block B, Floor 1", 60])
+    cursor.callproc("AddVenue",["Room 8", "Block B, Floor 2", 90])
     conn.commit()
 
 def addSpeaker(cursor, conn):
@@ -226,51 +219,40 @@ def addSpeaker(cursor, conn):
     conn.commit()
     
 def addReport(cursor, conn):
-    cursor.execute("INSERT INTO Report(details) values(%s)",
-                   ("Good",))
-    cursor.execute("INSERT INTO Report(details) values(%s)",
-                   ("Nice",))
-    cursor.execute("INSERT INTO Report(details) values(%s)",
-                   ("Terrible...",))
-    cursor.execute("INSERT INTO Report(details) values(%s)",
-                   ("Amazing.",))
-    cursor.execute("INSERT INTO Report(details) values(%s)",
-                   ("DO NOT TRY AT HOME",))
-
+    cursor.callproc("AddReport", ["Good"])
+    cursor.callproc("AddReport", ["Nice"])
+    cursor.callproc("AddReport", ["Terrible..."])
+    cursor.callproc("AddReport", ["Amazing."])
+    cursor.callproc("AddReport", ["DO NOT TRY AT HOME"])
     conn.commit()
 
 def addOrganizer(cursor, conn):
-    cursor.execute("INSERT INTO Organizer(organizer_name,event_id) values(%s,%s)",
-                   ("Baran",None))
-    cursor.execute("INSERT INTO Organizer(organizer_name,event_id) values(%s,%s)",
-                   ("Hüseyin",None))
-    cursor.execute("INSERT INTO Organizer(organizer_name,event_id) values(%s,%s)",
-                   ("Killa",None))
-    cursor.execute("INSERT INTO Organizer(organizer_name,event_id) values(%s,%s)",
-                   ("Hakan",None))
-    cursor.execute("INSERT INTO Organizer(organizer_name,event_id) values(%s,%s)",
-                   ("Bay K.",None))
+    cursor.callproc("AddOrganizer",["Baran",None])
+    cursor.callproc("AddOrganizer",["Hüseyin",None])
+    cursor.callproc("AddOrganizer",["Killa",None])
+    cursor.callproc("AddOrganizer",["Hakan",None])
+    cursor.callproc("AddOrganizer",["Bay K.",None])
     conn.commit()
     
 def addAttendee(cursor, conn):
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 1", 18, None))
+                   ("Attendee 1", 18, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 1", 22, None))
+                   ("Attendee 1", 22, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 2", 17, None))
+                   ("Attendee 2", 17, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 3", 16, None))
+                   ("Attendee 3", 16, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 4", 21, None))
+                   ("Attendee 4", 21, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 5", 28, None))
+                   ("Attendee 5", 28, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 6", 34, None))
+                   ("Attendee 6", 34, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 7", 31, None))
+                   ("Attendee 7", 31, 0))
     cursor.execute("INSERT INTO Attendee(attendee_name,age,ticket_quantity) values(%s,%s,%s)",
-                   ("Attendee 8", 32, None))
+                   ("Attendee 8", 32, 0))
 
     conn.commit()
 
@@ -407,4 +389,25 @@ def createView3(cursor, conn):
                 SELECT event_id,event_name,organizer_id,venue_id,speaker_id,date
                 FROM Event 
                 WHERE speaker_id IS NULL;""")
+    conn.commit()
+
+def createProcedure1(cursor,conn):
+    cursor.execute("""CREATE PROCEDURE AddReport(IN Info VARCHAR(200))
+                    BEGIN
+                        INSERT INTO Report(details) values(Info);
+                    END;""")
+    conn.commit()
+
+def createProcedure2(cursor, conn):
+    cursor.execute("""CREATE PROCEDURE AddVenue(IN name VARCHAR(50),IN addr VARCHAR(100),IN cap INT)
+                    BEGIN
+                        INSERT INTO Venue(venue_name,address,capacity) values(name,addr,cap);
+                    END;""")
+    conn.commit()
+
+def createProcedure3(cursor,conn):
+    cursor.execute("""CREATE PROCEDURE AddOrganizer(IN name VARCHAR(50),IN id INT)
+                    BEGIN
+                        INSERT INTO Organizer(organizer_name,event_id) values(name,id);
+                    END;""")
     conn.commit()

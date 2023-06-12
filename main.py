@@ -4,6 +4,7 @@ from database_connection import *
 
 mydb, cursor = initialize_connection()
 #dropAllDB()
+mydb.autocommit=False
 
 class Main_App:
     def __init__(self):
@@ -166,7 +167,7 @@ class Speaker_App:
 class Organizer_App:
     def __init__(self):
         self.window = Tk()
-        self.window.geometry("800x600")  # Screen Size(yatay x dikey)
+        self.window.geometry("1000x600")  # Screen Size(yatay x dikey)
         self.window.resizable(0, 0)
         self.window.columnconfigure(0, weight=1)
         self.window.config(background="#9BABB8")
@@ -191,7 +192,18 @@ class Organizer_App:
         invite_speaker_button = Button(self.window, text="List Venues",
                                        width=12, height=3, command=self.listVenues)
         invite_speaker_button.place(x=602, y=5)
+        invite_speaker_button = Button(self.window, text="See Report",
+                                       width=12, height=3, command=self.seeReport)
+        invite_speaker_button.place(x=722, y=5)
+        invite_speaker_button = Button(self.window, text="Add Report",
+                                       width=12, height=3, command=self.addReport)
+        invite_speaker_button.place(x=842, y=5)
     
+    def seeReport(self):
+       eny = ReportDialog(0)
+    def addReport(self):
+       eny = ReportDialog(1)
+       
     def cancelEvent(self):
        eny = CancelEventDialog(0)
     def listEvents(self):
@@ -407,16 +419,23 @@ class EventDialog:
 
         global cursor, mydb
         try:
+            if not mydb.in_transaction:
+                mydb.start_transaction()
             cursor.execute("""INSERT INTO Event(event_name,
                        organizer_id,venue_id,ticket_quantity,staff_quantity,
                        speaker_id,report_id,date) values(%s,%s,%s,%s,%s,%s,%s,%s)""",
                        (event_name,organizer_id,venue_id,ticket_quantity,staff_quantity,speaker_id,None,event_date))
+            cursor.execute("SELECT event_id FROM Event ORDER BY event_id DESC LIMIT 1")
+            last_id = cursor.fetchone()[0]
+            cursor.execute(
+                "UPDATE Speaker SET event_id=%s WHERE speaker_id=%s", (last_id, speaker_id))
+            mydb.commit()
         except mysql.connector.Error as err:
             show_warning(err.msg)
+            mydb.rollback()
             
-        mydb.commit()
-
         self.root.destroy()
+        
     def update_event(self):
         event_id = self.event_id_entry.get()
         event_name = self.event_name_entry.get()
@@ -500,7 +519,8 @@ class CancelEventDialog:
 
         global cursor, mydb
         try:
-            mydb.start_transaction()
+            if not mydb.in_transaction:
+                mydb.start_transaction()
             cursor.execute("UPDATE Event SET speaker_id= %s WHERE event_id= %s",
                            (speaker_id, event_id))
             cursor.execute("UPDATE Speaker SET event_id = %s WHERE speaker_id = %s",
@@ -617,7 +637,8 @@ class AttendeeDialog:
 
         global cursor, mydb
         try:
-            mydb.start_transaction()
+            if not mydb.in_transaction:
+                mydb.start_transaction()
             cursor.execute("SELECT event_name, date, venue_id FROM Event WHERE event_id= %s",(event_id,))
             event_details = cursor.fetchone()
             if event_details is not None:
@@ -629,6 +650,8 @@ class AttendeeDialog:
                             (event_id,event_name,event_date,venue_id,venue_name[0],attendee_id))
                 cursor.execute("UPDATE Event SET ticket_quantity = ticket_quantity -1 WHERE event_id=%s",
                                (event_id,))
+                cursor.execute("UPDATE Attendee SET ticket_quantity = ticket_quantity +1 WHERE attendee_id=%s",
+                               (attendee_id,))
             mydb.commit()
         except mysql.connector.Error as err:
             show_warning(err.msg)
@@ -641,17 +664,20 @@ class AttendeeDialog:
 
         global cursor, mydb
         try:
-            mydb.start_transaction()
+            if not mydb.in_transaction:
+                mydb.start_transaction()
             cursor.execute("SELECT event_id FROM Ticket WHERE ticket_id= %s", (ticket_id,))
             event_id = cursor.fetchone()
             cursor.execute("UPDATE EVENT SET ticket_quantity= ticket_quantity+1 WHERE event_id= %s",
                            (event_id[0],))
             cursor.execute("DELETE FROM Ticket WHERE ticket_id= %s AND attendee_id=%s ",
                            (ticket_id,attendee_id))
+            cursor.execute("UPDATE Attendee SET ticket_quantity = ticket_quantity -1 WHERE attendee_id=%s",
+                           (attendee_id,))
             mydb.commit()   
         except mysql.connector.Error as err:
-            show_warning(err.msg)
             mydb.rollback()
+            show_warning(err.msg)
             
         self.root.destroy()
 class StaffDialog:
@@ -728,7 +754,8 @@ class StaffDialog:
         event_id = self.event_id_entry.get()
 
         try:
-            mydb.start_transaction()
+            if not mydb.in_transaction:
+                mydb.start_transaction()
             cursor.execute("UPDATE Staff SET event_id=%s WHERE staff_id= %s", (event_id,staff_id,))
             cursor.execute("UPDATE Event SET staff_quantity=staff_quantity-1 WHERE event_id= %s", (event_id,))
             mydb.commit()
@@ -747,6 +774,70 @@ class StaffDialog:
 
         mydb.commit()
         self.root.destroy()
+
+class ReportDialog:
+    def __init__(self, type):
+        self.root = Tk()
+        title = "See Report"
+        cmd = self.see_report
+        if type == 1:
+            title = "Add Report"
+            cmd = self.add_report
+
+        self.root.title(title)
+        if type == 0:
+            report_id_label = Label(self.root, text="Report ID:")
+            report_id_label.pack()
+            self.report_id_entry = Entry(self.root)
+            self.report_id_entry.pack()
+        if type == 1:
+            event_id_label = Label(self.root, text="Event ID:")
+            event_id_label.pack()
+            self.event_id_entry = Entry(self.root)
+            self.event_id_entry.pack()
+            
+            info_label = Label(self.root, text="Information:")
+            info_label.pack()
+            self.info_entry = Entry(self.root)
+            self.info_entry.pack()
+
+        create_event_button = Button(
+            self.root, text=title, command=cmd)
+        create_event_button.pack()
+
+    def see_report(self):
+        report_id = self.report_id_entry.get()
+        global cursor, mydb
+        try:
+            cursor.execute("SELECT details FROM Report WHERE report_id= %s",
+                           (report_id ,))
+            info=cursor.fetchone()[0]
+            messagebox.showinfo("Report",str(info))
+        except mysql.connector.Error as err:
+            show_warning(err.msg)
+
+        mydb.commit()
+        self.root.destroy()
+
+    def add_report(self):
+        event_id = self.event_id_entry.get()
+        info=self.info_entry.get()
+
+        global cursor, mydb
+        try:
+            cursor.callproc("AddReport", [info])
+            cursor.execute(
+                "SELECT report_id FROM Report ORDER BY report_id DESC LIMIT 1")
+            last_id = cursor.fetchone()[0]
+            cursor.execute(
+                "UPDATE Event SET report_id=%s WHERE event_id=%s", (last_id,event_id))
+        except mysql.connector.Error as err:
+            show_warning(err.msg)
+
+        mydb.commit()
+        self.root.destroy()
+
+
 def clearEntries(entries):
     k=len(entries)
     for i in range(k):
